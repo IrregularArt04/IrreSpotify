@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:IrreSpotify.ViewModels"
+             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             x:Class="IrreSpotify.Views.PlayerBarView"
+             x:DataType="vm:PlayerViewModel">
+
+    <Border Background="#121215" 
+            BorderBrush="#222226" 
+            BorderThickness="0,1,0,0" 
+            Padding="16,10">
+        <Grid ColumnDefinitions="280, *, 280">
+            <!-- Left: Currently Playing Info -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <Border CornerRadius="8" ClipToBounds="True" Width="52" Height="52" Background="#24242A">
+                    <Grid>
+                        <TextBlock Text="🎵" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Image asyncImageLoader:ImageLoader.Source="{Binding AlbumCoverUrl}" Stretch="UniformToFill" 
+                               IsVisible="{Binding AlbumCoverUrl, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </Grid>
+                </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="3" Width="190">
+                    <TextBlock Text="{Binding TrackTitle}" 
+                               FontWeight="SemiBold" 
+                               FontSize="14" 
+                               Foreground="White" 
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding ArtistName}" 
+                               FontSize="12" 
+                               Foreground="#A7A7A7" 
+                               TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Center: Player Controls & Progress -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6" HorizontalAlignment="Stretch">
+                <!-- Playback Buttons -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+                    <Button Command="{Binding SkipPreviousCommand}" 
+                            Background="Transparent" 
+                            BorderThickness="0" 
+                            Padding="8" 
+                            Cursor="Hand">
+                        <TextBlock Text="⏮" FontSize="16" Foreground="#B3B3B3"/>
+                    </Button>
+
+                    <Button Command="{Binding TogglePlayPauseCommand}" 
+                            Background="#1DB954" 
+                            CornerRadius="20" 
+                            Width="38" 
+                            Height="38" 
+                            Padding="0" 
+                            Cursor="Hand">
+                        <TextBlock Text="{Binding IsPlaying, Converter={x:Static StringConverters.IsNotNullOrEmpty}, FallbackValue='▶', TargetNullValue='▶'}" 
+                                   FontSize="16" 
+                                   Foreground="Black" 
+                                   HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center"/>
+                    </Button>
+
+                    <Button Command="{Binding SkipNextCommand}" 
+                            Background="Transparent" 
+                            BorderThickness="0" 
+                            Padding="8" 
+                            Cursor="Hand">
+                        <TextBlock Text="⏭" FontSize="16" Foreground="#B3B3B3"/>
+                    </Button>
+                </StackPanel>
+
+                <!-- Progress Bar -->
+                <Grid ColumnDefinitions="Auto, *, Auto" HorizontalAlignment="Stretch">
+                    <TextBlock Grid.Column="0" Text="{Binding ProgressText}" FontSize="11" Foreground="#A7A7A7" VerticalAlignment="Center"/>
+                    <ProgressBar Grid.Column="1" 
+                                 Margin="10,0" 
+                                 Minimum="0" 
+                                 Maximum="{Binding DurationMs}" 
+                                 Value="{Binding ProgressMs}" 
+                                 Height="4" 
+                                 Foreground="#1DB954" 
+                                 Background="#333338" 
+                                 CornerRadius="2"/>
+                    <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="11" Foreground="#A7A7A7" VerticalAlignment="Center"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- Right: Volume & Librespot Status Badge -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="14">
+                <!-- Librespot Badge -->
+                <Border CornerRadius="12" Padding="8,4" Background="#182A1E" BorderBrush="#255431" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Ellipse Width="8" Height="8" Fill="{Binding IsLibrespotRunning, Converter={x:Static StringConverters.IsNotNullOrEmpty}, FallbackValue='#1DB954'}"/>
+                        <TextBlock Text="{Binding DeviceName}" FontSize="11" Foreground="#1DB954" FontWeight="Medium"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Volume Slider -->
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <TextBlock Text="🔊" FontSize="14" Foreground="#A7A7A7" VerticalAlignment="Center"/>
+                    <Slider Width="90" 
+                            Minimum="0" 
+                            Maximum="100" 
+                            Value="{Binding VolumePercent}" 
+                            VerticalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
