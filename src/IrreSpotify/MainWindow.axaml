@@ -8,6 +8,7 @@
         x:Class="IrreSpotify.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="IrreSpotify Lite"
+        Icon="/img/icon.ico"
         Width="1100" Height="720"
         MinWidth="950" MinHeight="600"
         Background="#09090B"
@@ -20,6 +21,9 @@
         <DataTemplate DataType="vm:LibraryViewModel">
             <views:LibraryView DataContext="{Binding}"/>
         </DataTemplate>
+        <DataTemplate DataType="vm:PlaylistDetailViewModel">
+            <views:PlaylistDetailView DataContext="{Binding}"/>
+        </DataTemplate>
     </Window.DataTemplates>
 
     <Grid RowDefinitions="*, Auto">
@@ -29,15 +33,59 @@
             <Border Grid.Column="0" Background="#000000" Padding="16,20" BorderBrush="#1C1C20" BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="Auto, Auto, *, Auto">
                     <!-- App Brand Header -->
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="4,0,0,24">
-                        <Border CornerRadius="16" Width="32" Height="32" Background="#1DB954">
-                            <TextBlock Text="⚡" FontSize="18" Foreground="Black" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="IrreSpotify" FontWeight="Bold" FontSize="16" Foreground="White"/>
-                            <TextBlock Text="Spotify Lite" FontSize="11" Foreground="#1DB954"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="4,0,0,24">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                            <Border CornerRadius="16" Width="32" Height="32" Background="{DynamicResource PrimaryBrush}">
+                                <TextBlock Text="⚡" FontSize="18" Foreground="Black" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="IrreSpotify" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                                <TextBlock Text="Spotify Lite" FontSize="11" Foreground="{DynamicResource PrimaryBrush}"/>
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
+
+                        <!-- Color Picker Button -->
+                        <Button Grid.Column="1"
+                                ToolTip.Tip="Cambiar Color Principal"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="4"
+                                VerticalAlignment="Center"
+                                Cursor="Hand">
+                            <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource PrimaryBrush}" BorderBrush="White" BorderThickness="1.5">
+                                <TextBlock Text="🎨" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Button.Flyout>
+                                <Flyout Placement="Bottom">
+                                    <Border Background="#18181C" CornerRadius="12" Padding="14" Width="260" BorderBrush="#282830" BorderThickness="1">
+                                        <StackPanel Spacing="12">
+                                            <TextBlock Text="Color Principal" FontWeight="Bold" Foreground="White" FontSize="14"/>
+                                            <TextBlock Text="Selecciona un color de acento:" FontSize="11" Foreground="#A7A7A7"/>
+
+                                            <!-- Preset Color Swatches -->
+                                            <WrapPanel ItemWidth="34" ItemHeight="34">
+                                                <Button Command="{Binding ChangeThemeColorCommand}" CommandParameter="#1DB954" Width="28" Height="28" CornerRadius="14" Background="#1DB954" Margin="3" Cursor="Hand" ToolTip.Tip="Spotify Green"/>
+                                                <Button Command="{Binding ChangeThemeColorCommand}" CommandParameter="#00D1B2" Width="28" Height="28" CornerRadius="14" Background="#00D1B2" Margin="3" Cursor="Hand" ToolTip.Tip="Emerald Mint"/>
+                                                <Button Command="{Binding ChangeThemeColorCommand}" CommandParameter="#1D9BF0" Width="28" Height="28" CornerRadius="14" Background="#1D9BF0" Margin="3" Cursor="Hand" ToolTip.Tip="Cyan Blue"/>
+                                                <Button Command="{Binding ChangeThemeColorCommand}" CommandParameter="#8A2BE2" Width="28" Height="28" CornerRadius="14" Background="#8A2BE2" Margin="3" Cursor="Hand" ToolTip.Tip="Electric Purple"/>
+                                                <Button Command="{Binding ChangeThemeColorCommand}" CommandParameter="#FF2D55" Width="28" Height="28" CornerRadius="14" Background="#FF2D55" Margin="3" Cursor="Hand" ToolTip.Tip="Neon Pink"/>
+                                                <Button Command="{Binding ChangeThemeColorCommand}" CommandParameter="#FF9500" Width="28" Height="28" CornerRadius="14" Background="#FF9500" Margin="3" Cursor="Hand" ToolTip.Tip="Flame Orange"/>
+                                                <Button Command="{Binding ChangeThemeColorCommand}" CommandParameter="#FFCC00" Width="28" Height="28" CornerRadius="14" Background="#FFCC00" Margin="3" Cursor="Hand" ToolTip.Tip="Gold Yellow"/>
+                                                <Button Command="{Binding ChangeThemeColorCommand}" CommandParameter="#E50914" Width="28" Height="28" CornerRadius="14" Background="#E50914" Margin="3" Cursor="Hand" ToolTip.Tip="Crimson Red"/>
+                                            </WrapPanel>
+
+                                            <!-- Custom Hex Input -->
+                                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                                                <TextBlock Text="Hex:" VerticalAlignment="Center" Foreground="#A7A7A7" FontSize="11"/>
+                                                <TextBox Text="{Binding CustomHexColor, Mode=TwoWay}" Width="100" Padding="6,4" Background="#121215" Foreground="White" CornerRadius="6" FontSize="12"/>
+                                                <Button Content="Aplicar" Command="{Binding ApplyCustomHexColorCommand}" Background="{DynamicResource PrimaryBrush}" Foreground="Black" FontWeight="Bold" Padding="10,4" CornerRadius="6" FontSize="11" Cursor="Hand"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                    </Grid>
 
                     <!-- Navigation Items -->
                     <StackPanel Grid.Row="1" Spacing="6">
@@ -65,7 +113,7 @@
                                 Cursor="Hand">
                             <StackPanel Orientation="Horizontal" Spacing="12">
                                 <TextBlock Text="📚" FontSize="16"/>
-                                <TextBlock Text="Your Library" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                                <TextBlock Text="Library" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -74,7 +122,7 @@
                     <Border Grid.Row="3" CornerRadius="10" Padding="12" Background="#121215" BorderBrush="#222226" BorderThickness="1">
                         <StackPanel Spacing="10">
                             <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                                <Border CornerRadius="14" Width="28" Height="28" Background="#1DB954">
+                                <Border CornerRadius="14" Width="28" Height="28" Background="{DynamicResource PrimaryBrush}">
                                     <TextBlock Text="👤" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <TextBlock Text="{Binding UserName}" 
@@ -96,7 +144,7 @@
                             <Button Command="{Binding LoginCommand}" 
                                     IsVisible="{Binding !IsAuthenticated}" 
                                     HorizontalAlignment="Stretch" 
-                                    Background="#1DB954" 
+                                    Background="{DynamicResource PrimaryBrush}" 
                                     Foreground="Black" 
                                     FontWeight="Bold" 
                                     CornerRadius="16" 

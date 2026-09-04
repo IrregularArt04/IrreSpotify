@@ -36,6 +36,25 @@
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6" HorizontalAlignment="Stretch">
                 <!-- Playback Buttons -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+                    <!-- Shuffle Button -->
+                    <Button Command="{Binding ToggleShuffleCommand}" 
+                            Background="Transparent" 
+                            BorderThickness="0" 
+                            Padding="8" 
+                            Cursor="Hand"
+                            ToolTip.Tip="Orden aleatorio (Shuffle)">
+                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <!-- Inactive Shuffle Icon -->
+                            <TextBlock Text="🔀" FontSize="16" Foreground="#727272" 
+                                       IsVisible="{Binding !IsShuffleEnabled}"/>
+                            <!-- Active Shuffle Icon with Active Dot -->
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" IsVisible="{Binding IsShuffleEnabled}">
+                                <TextBlock Text="🔀" FontSize="16" Foreground="{DynamicResource PrimaryBrush}"/>
+                                <Ellipse Width="4" Height="4" Fill="{DynamicResource PrimaryBrush}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
                     <Button Command="{Binding SkipPreviousCommand}" 
                             Background="Transparent" 
                             BorderThickness="0" 
@@ -45,13 +64,13 @@
                     </Button>
 
                     <Button Command="{Binding TogglePlayPauseCommand}" 
-                            Background="#1DB954" 
+                            Background="{DynamicResource PrimaryBrush}" 
                             CornerRadius="20" 
                             Width="38" 
                             Height="38" 
                             Padding="0" 
                             Cursor="Hand">
-                        <TextBlock Text="{Binding IsPlaying, Converter={x:Static StringConverters.IsNotNullOrEmpty}, FallbackValue='▶', TargetNullValue='▶'}" 
+                        <TextBlock Text="{Binding PlayPauseIconText}" 
                                    FontSize="16" 
                                    Foreground="Black" 
                                    HorizontalAlignment="Center" 
@@ -76,7 +95,7 @@
                                  Maximum="{Binding DurationMs}" 
                                  Value="{Binding ProgressMs}" 
                                  Height="4" 
-                                 Foreground="#1DB954" 
+                                 Foreground="{DynamicResource PrimaryBrush}" 
                                  Background="#333338" 
                                  CornerRadius="2"/>
                     <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="11" Foreground="#A7A7A7" VerticalAlignment="Center"/>
@@ -88,8 +107,8 @@
                 <!-- Librespot Badge -->
                 <Border CornerRadius="12" Padding="8,4" Background="#182A1E" BorderBrush="#255431" BorderThickness="1">
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <Ellipse Width="8" Height="8" Fill="{Binding IsLibrespotRunning, Converter={x:Static StringConverters.IsNotNullOrEmpty}, FallbackValue='#1DB954'}"/>
-                        <TextBlock Text="{Binding DeviceName}" FontSize="11" Foreground="#1DB954" FontWeight="Medium"/>
+                        <Ellipse Width="8" Height="8" Fill="{DynamicResource PrimaryBrush}"/>
+                        <TextBlock Text="{Binding DeviceName}" FontSize="11" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Medium"/>
                     </StackPanel>
                 </Border>
 
@@ -99,7 +118,7 @@
                     <Slider Width="90" 
                             Minimum="0" 
                             Maximum="100" 
-                            Value="{Binding VolumePercent}" 
+                            Value="{Binding VolumePercent, Mode=TwoWay}" 
                             VerticalAlignment="Center"/>
                 </StackPanel>
             </StackPanel>

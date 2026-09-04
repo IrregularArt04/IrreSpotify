@@ -14,7 +14,7 @@
                 <Grid ColumnDefinitions="*, Auto" MaxWidth="600" HorizontalAlignment="Left">
                     <TextBox Grid.Column="0" 
                              Text="{Binding SearchQuery, Mode=TwoWay}" 
-                             Watermark="Search tracks, artists, or albums..." 
+                             PlaceholderText="Search tracks, artists, or albums..." 
                              Height="42" 
                              CornerRadius="20" 
                              Padding="16,10" 
@@ -26,7 +26,7 @@
                             Command="{Binding PerformSearchCommand}" 
                             Margin="8,0,0,0" 
                             Content="🔍 Search" 
-                            Background="#1DB954" 
+                            Background="{DynamicResource PrimaryBrush}" 
                             Foreground="Black" 
                             FontWeight="SemiBold" 
                             Height="42" 
@@ -43,19 +43,21 @@
             <ListBox ItemsSource="{Binding SearchResults}" Background="Transparent" BorderThickness="0">
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="models:TrackItem">
-                        <Border Margin="0,4" Padding="12" CornerRadius="8" Background="#18181C">
+                        <Border Margin="0,4" Padding="12" CornerRadius="8" Background="{Binding RowBackground}">
                             <Grid ColumnDefinitions="48, *, Auto, Auto">
                                 <!-- Album Cover -->
                                 <Border Grid.Column="0" CornerRadius="4" ClipToBounds="True" Width="40" Height="40" Background="#24242A">
                                     <Grid>
                                         <TextBlock Text="🎵" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        <Image asyncImageLoader:ImageLoader.Source="{Binding CoverUrl}" Stretch="UniformToFill"/>
+                                        <Image asyncImageLoader:ImageLoader.Source="{Binding CoverUrl}" 
+                                               IsVisible="{Binding CoverUrl, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" 
+                                               Stretch="UniformToFill"/>
                                     </Grid>
                                 </Border>
 
                                 <!-- Title & Artist -->
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0" Spacing="2">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="White" FontSize="14"/>
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="{Binding TitleForeground}" FontSize="14"/>
                                     <TextBlock Text="{Binding Artist}" FontSize="12" Foreground="#A7A7A7"/>
                                 </StackPanel>
 
@@ -72,16 +74,15 @@
                                 <!-- Duration & Play Button -->
                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding DurationText}" Foreground="#A7A7A7" FontSize="13" VerticalAlignment="Center"/>
-                                    <Button Command="{Binding $parent[UserControl].((vm:SearchViewModel)DataContext).PlayTrackCommand}" 
-                                            CommandParameter="{Binding}" 
-                                            Background="#1DB954" 
+                                    <Button Command="{Binding PlayCommand}" 
+                                            Background="{DynamicResource PrimaryBrush}" 
                                             Foreground="Black" 
                                             CornerRadius="16" 
                                             Width="32" 
                                             Height="32" 
                                             Padding="0" 
                                             Cursor="Hand">
-                                        <TextBlock Text="▶" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                                        <TextBlock Text="{Binding PlayIconText}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
                                     </Button>
                                 </StackPanel>
                             </Grid>

@@ -39,11 +39,11 @@ public class LibrespotService : IDisposable
         string cachePath = Path.Combine(baseDir, "cache");
         Directory.CreateDirectory(cachePath);
 
-        string arguments = $"--name \"{DeviceName}\" --bitrate {bitrate} --cache \"{cachePath}\"";
+        string arguments = $"--name \"{DeviceName}\" --bitrate {bitrate} --cache \"{cachePath}\" -j";
 
         if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
         {
-            arguments += $" --username \"{username}\" --password \"{password}\"";
+            arguments = $"--name \"{DeviceName}\" --bitrate {bitrate} --cache \"{cachePath}\" --username \"{username}\" --password \"{password}\"";
         }
 
         var startInfo = new ProcessStartInfo

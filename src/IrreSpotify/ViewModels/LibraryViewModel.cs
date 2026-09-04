@@ -13,6 +13,7 @@ public partial class LibraryViewModel : ViewModelBase
 {
     private readonly SpotifyService? _spotifyService;
     private readonly Action<string>? _playContextAction;
+    private readonly Action<PlaylistItem>? _openPlaylistAction;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -20,12 +21,28 @@ public partial class LibraryViewModel : ViewModelBase
     [ObservableProperty]
     private string _statusMessage = "Loading user library...";
 
+    [ObservableProperty]
+    private PlaylistItem? _selectedPlaylist;
+
+    partial void OnSelectedPlaylistChanged(PlaylistItem? value)
+    {
+        if (value != null)
+        {
+            _openPlaylistAction?.Invoke(value);
+            SelectedPlaylist = null;
+        }
+    }
+
     public ObservableCollection<PlaylistItem> Playlists { get; } = new();
 
-    public LibraryViewModel(SpotifyService? spotifyService, Action<string>? playContextAction = null)
+    public LibraryViewModel(
+        SpotifyService? spotifyService, 
+        Action<string>? playContextAction = null,
+        Action<PlaylistItem>? openPlaylistAction = null)
     {
         _spotifyService = spotifyService;
         _playContextAction = playContextAction;
+        _openPlaylistAction = openPlaylistAction;
     }
 
     [RelayCommand]
@@ -48,14 +65,17 @@ public partial class LibraryViewModel : ViewModelBase
             {
                 foreach (var pl in playlistsPaging.Items)
                 {
-                    Playlists.Add(new PlaylistItem
+                    var item = new PlaylistItem
                     {
+                        Id = pl.Id ?? string.Empty,
                         Uri = pl.Uri ?? string.Empty,
                         Name = pl.Name ?? "Untitled Playlist",
                         Owner = pl.Owner?.DisplayName ?? "Spotify",
-                        CoverUrl = pl.Images?.FirstOrDefault()?.Url ?? string.Empty,
+                        CoverUrl = pl.Images?.FirstOrDefault()?.Url,
                         TrackCount = pl.Items?.Total ?? 0
-                    });
+                    };
+                    item.PlayCommand = new RelayCommand(() => PlayPlaylist(item));
+                    Playlists.Add(item);
                 }
                 StatusMessage = $"{Playlists.Count} playlists loaded";
             }
@@ -71,6 +91,15 @@ public partial class LibraryViewModel : ViewModelBase
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenPlaylist(PlaylistItem? playlist)
+    {
+        if (playlist != null)
+        {
+            _openPlaylistAction?.Invoke(playlist);
         }
     }
 

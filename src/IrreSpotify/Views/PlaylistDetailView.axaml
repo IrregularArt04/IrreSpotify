@@ -1,0 +1,200 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:IrreSpotify.ViewModels"
+             xmlns:models="using:IrreSpotify.Models"
+             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             x:Class="IrreSpotify.Views.PlaylistDetailView"
+             x:DataType="vm:PlaylistDetailViewModel">
+
+    <Grid RowDefinitions="Auto, Auto, *, Auto">
+        <!-- Back Navigation & Header Banner -->
+        <Border Grid.Row="0" Padding="24,16,24,20" Background="#09090B">
+            <StackPanel Spacing="16">
+                <!-- Back Button -->
+                <Button Command="{Binding GoBackCommand}" 
+                        Content="← Back to Library" 
+                        Background="#18181C" 
+                        Foreground="#A7A7A7" 
+                        CornerRadius="16" 
+                        Padding="14,6" 
+                        FontSize="12" 
+                        HorizontalAlignment="Left"
+                        Cursor="Hand"/>
+
+                <!-- Playlist Info Header -->
+                <Grid ColumnDefinitions="120, *, Auto" VerticalAlignment="Center">
+                    <!-- Playlist Large Cover -->
+                    <Border Grid.Column="0" Width="110" Height="110" CornerRadius="12" ClipToBounds="True" Background="#18181C">
+                        <Grid>
+                            <TextBlock Text="🎵" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image asyncImageLoader:ImageLoader.Source="{Binding Playlist.CoverUrl}" 
+                                   IsVisible="{Binding Playlist.CoverUrl, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" 
+                                   Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Title & Details -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0" Spacing="6">
+                        <TextBlock Text="PLAYLIST" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" LetterSpacing="1"/>
+                        <TextBlock Text="{Binding Playlist.Name}" FontSize="28" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="{Binding Playlist.Owner}" FontSize="13" Foreground="#A7A7A7"/>
+                            <TextBlock Text="•" FontSize="13" Foreground="#555555"/>
+                            <TextBlock Text="{Binding StatusMessage}" FontSize="13" Foreground="#A7A7A7"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Header Action Buttons -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <!-- Big Play Button -->
+                        <Button Command="{Binding PlayPlaylistCommand}" 
+                                Background="{DynamicResource PrimaryBrush}" 
+                                Foreground="Black" 
+                                CornerRadius="26" 
+                                Width="52" 
+                                Height="52" 
+                                Padding="0" 
+                                Cursor="Hand"
+                                ToolTip.Tip="Reproducir playlist">
+                            <TextBlock Text="▶" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Margin="3,0,0,0"/>
+                        </Button>
+                        <!-- Shuffle Play Button -->
+                        <Button Command="{Binding PlayPlaylistShuffleCommand}" 
+                                Background="#24242A" 
+                                Foreground="{DynamicResource PrimaryBrush}" 
+                                CornerRadius="22" 
+                                Width="44" 
+                                Height="44" 
+                                Padding="0" 
+                                Cursor="Hand"
+                                ToolTip.Tip="Reproducción aleatoria">
+                            <TextBlock Text="🔀" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Loading Bar -->
+        <ProgressBar Grid.Row="1" 
+                     IsIndeterminate="True" 
+                     IsVisible="{Binding IsLoading}" 
+                     Height="3" 
+                     VerticalAlignment="Top" 
+                     Foreground="{DynamicResource PrimaryBrush}" 
+                     Background="Transparent"/>
+
+        <!-- Tracks List -->
+        <ScrollViewer x:Name="TracksScrollViewer" Grid.Row="2" Padding="24,12">
+            <ListBox ItemsSource="{Binding Tracks}" Background="Transparent" BorderThickness="0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:TrackItem">
+                        <Border Margin="0,4" Padding="12,10" CornerRadius="8" Background="{Binding RowBackground}">
+                            <Grid ColumnDefinitions="42, *, Auto, Auto">
+                                <!-- Track Cover -->
+                                <Border Grid.Column="0" CornerRadius="4" ClipToBounds="True" Width="36" Height="36" Background="#24242A">
+                                    <Grid>
+                                        <TextBlock Text="🎵" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                                        <Image asyncImageLoader:ImageLoader.Source="{Binding CoverUrl}" 
+                                               IsVisible="{Binding CoverUrl, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" 
+                                               Stretch="UniformToFill"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Title & Artist -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0" Spacing="2">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="{Binding TitleForeground}" FontSize="14"/>
+                                    <TextBlock Text="{Binding Artist}" FontSize="12" Foreground="#A7A7A7"/>
+                                </StackPanel>
+
+                                <!-- Album -->
+                                <TextBlock Grid.Column="2" 
+                                           Text="{Binding Album}" 
+                                           VerticalAlignment="Center" 
+                                           Foreground="#777777" 
+                                           FontSize="13" 
+                                           Margin="20,0" 
+                                           MaxWidth="180" 
+                                           TextTrimming="CharacterEllipsis"/>
+
+                                <!-- Duration & Play -->
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DurationText}" Foreground="#A7A7A7" FontSize="13" VerticalAlignment="Center"/>
+                                    <Button Command="{Binding PlayCommand}" 
+                                            Background="{DynamicResource PrimaryBrush}" 
+                                            Foreground="Black" 
+                                            CornerRadius="16" 
+                                            Width="32" 
+                                            Height="32" 
+                                            Padding="0" 
+                                            Cursor="Hand">
+                                        <TextBlock Text="{Binding PlayIconText}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </ScrollViewer>
+
+        <!-- Pagination Controls Bar -->
+        <Border Grid.Row="3" Padding="24,10" Background="#0C0C0F" BorderBrush="#1C1C20" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <!-- Page Size Selector -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Text="Mostrar por página:" Foreground="#A7A7A7" FontSize="12" VerticalAlignment="Center"/>
+                    <ComboBox ItemsSource="{Binding PageSizeOptions}" 
+                              SelectedItem="{Binding SelectedPageSize, Mode=TwoWay}" 
+                              Background="#18181C" 
+                              Foreground="White" 
+                              BorderBrush="#2A2A30" 
+                              CornerRadius="8" 
+                              FontSize="12" 
+                              Padding="10,4"
+                              Cursor="Hand"/>
+                </StackPanel>
+
+                <!-- Page Info Text -->
+                <TextBlock Grid.Column="1" 
+                           Text="{Binding PageInfoText}" 
+                           Foreground="#777777" 
+                           FontSize="12" 
+                           HorizontalAlignment="Center" 
+                           VerticalAlignment="Center"/>
+
+                <!-- Previous / Next Controls -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Command="{Binding PreviousPageCommand}" 
+                            IsEnabled="{Binding CanGoPrevious}" 
+                            Background="#18181C" 
+                            Foreground="White" 
+                            CornerRadius="16" 
+                            Padding="12,6" 
+                            FontSize="12" 
+                            Cursor="Hand">
+                        <TextBlock Text="◀ Anterior"/>
+                    </Button>
+
+                    <TextBlock Text="{Binding PageNumberText}" 
+                               Foreground="White" 
+                               FontWeight="SemiBold" 
+                               FontSize="12" 
+                               VerticalAlignment="Center" 
+                               Margin="4,0"/>
+
+                    <Button Command="{Binding NextPageCommand}" 
+                            IsEnabled="{Binding CanGoNext}" 
+                            Background="#18181C" 
+                            Foreground="White" 
+                            CornerRadius="16" 
+                            Padding="12,6" 
+                            FontSize="12" 
+                            Cursor="Hand">
+                        <TextBlock Text="Siguiente ▶"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -13,6 +13,9 @@
 
         <SolidColorBrush x:Key="SpotifyGreenBrush" Color="{StaticResource SpotifyGreenColor}" />
         <SolidColorBrush x:Key="SpotifyGreenHoverBrush" Color="{StaticResource SpotifyGreenHoverColor}" />
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource SpotifyGreenColor}" />
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{StaticResource SpotifyGreenHoverColor}" />
+        <SolidColorBrush x:Key="PrimaryActiveBgBrush" Color="#1F382B" />
         <SolidColorBrush x:Key="DarkBgBrush" Color="{StaticResource DarkBgColor}" />
         <SolidColorBrush x:Key="SurfaceBgBrush" Color="{StaticResource SurfaceBgColor}" />
         <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBgColor}" />

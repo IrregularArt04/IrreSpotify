@@ -24,7 +24,15 @@ public partial class PlayerViewModel : ViewModelBase
     private string? _albumCoverUrl;
 
     [ObservableProperty]
+    private string? _currentlyPlayingUri;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PlayPauseIconText))]
     private bool _isPlaying;
+
+    public string PlayPauseIconText => IsPlaying ? "⏸" : "▶";
+
+    public event Action<string?, bool>? PlaybackStateChanged;
 
     [ObservableProperty]
     private int _progressMs;
@@ -34,6 +42,9 @@ public partial class PlayerViewModel : ViewModelBase
 
     [ObservableProperty]
     private int _volumePercent = 80;
+
+    [ObservableProperty]
+    private bool _isShuffleEnabled;
 
     [ObservableProperty]
     private bool _isLibrespotRunning;
@@ -89,6 +100,31 @@ public partial class PlayerViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task ToggleShuffleAsync()
+    {
+        if (_spotifyService == null) return;
+        bool newState = !IsShuffleEnabled;
+        bool success = await _spotifyService.SetShuffleAsync(newState);
+        if (success)
+        {
+            IsShuffleEnabled = newState;
+        }
+    }
+
+    private bool _isUpdatingVolumeFromApi = false;
+
+    partial void OnVolumePercentChanged(int value)
+    {
+        if (_isUpdatingVolumeFromApi) return;
+        if (_spotifyService == null) return;
+
+        _ = Task.Run(async () =>
+        {
+            await _spotifyService.SetVolumeAsync(Math.Clamp(value, 0, 100));
+        });
+    }
+
+    [RelayCommand]
     private async Task SetVolumeAsync(double volume)
     {
         if (_spotifyService == null) return;
@@ -104,18 +140,36 @@ public partial class PlayerViewModel : ViewModelBase
         try
         {
             var playback = await _spotifyService.GetCurrentPlaybackAsync();
-            if (playback != null && playback.Item is SpotifyAPI.Web.FullTrack track)
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                TrackTitle = track.Name;
-                ArtistName = string.Join(", ", track.Artists.Select(a => a.Name));
-                AlbumCoverUrl = track.Album.Images.FirstOrDefault()?.Url;
-                IsPlaying = playback.IsPlaying;
-                ProgressMs = playback.ProgressMs;
-                DurationMs = track.DurationMs > 0 ? track.DurationMs : 1;
+                if (playback != null && playback.Item is SpotifyAPI.Web.FullTrack track)
+                {
+                    CurrentlyPlayingUri = track.Uri;
+                    TrackTitle = track.Name;
+                    ArtistName = string.Join(", ", track.Artists.Select(a => a.Name));
+                    AlbumCoverUrl = track.Album.Images.FirstOrDefault()?.Url;
+                    IsPlaying = playback.IsPlaying;
+                    IsShuffleEnabled = playback.ShuffleState;
+                    ProgressMs = playback.ProgressMs;
+                    DurationMs = track.DurationMs > 0 ? track.DurationMs : 1;
 
-                ProgressText = FormatTime(ProgressMs);
-                DurationText = FormatTime(DurationMs);
-            }
+                    if (playback.Device != null && playback.Device.VolumePercent.HasValue)
+                    {
+                        _isUpdatingVolumeFromApi = true;
+                        VolumePercent = playback.Device.VolumePercent.Value;
+                        _isUpdatingVolumeFromApi = false;
+                    }
+
+                    ProgressText = FormatTime(ProgressMs);
+                    DurationText = FormatTime(DurationMs);
+
+                    PlaybackStateChanged?.Invoke(CurrentlyPlayingUri, IsPlaying);
+                }
+                else
+                {
+                    PlaybackStateChanged?.Invoke(null, false);
+                }
+            });
         }
         catch (Exception ex)
         {

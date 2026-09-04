@@ -37,6 +37,7 @@ public class AuthService
     public SpotifyClient? SpotifyClient { get; private set; }
     public event Action<bool>? AuthStateChanged;
 
+    public string? AccessToken => CurrentToken?.AccessToken;
     public bool IsAuthenticated => SpotifyClient != null;
 
     public AuthService()
@@ -144,8 +145,13 @@ public class AuthService
                 Scopes.UserReadCurrentlyPlaying,
                 Scopes.PlaylistReadPrivate,
                 Scopes.PlaylistReadCollaborative,
+                Scopes.PlaylistModifyPublic,
+                Scopes.PlaylistModifyPrivate,
                 Scopes.UserLibraryRead,
-                Scopes.UserTopRead
+                Scopes.UserLibraryModify,
+                Scopes.UserTopRead,
+                Scopes.Streaming,
+                Scopes.AppRemoteControl
             }
         };
 
