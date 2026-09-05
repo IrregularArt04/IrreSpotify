@@ -151,6 +151,33 @@ public partial class PlaylistDetailViewModel : ViewModelBase
             Tracks.Clear();
             foreach (var t in pageSlice) Tracks.Add(t);
         }
+
+        _ = EnrichCurrentPageCoversAsync();
+    }
+
+    private async Task EnrichCurrentPageCoversAsync()
+    {
+        if (_spotifyService == null || Tracks.Count == 0) return;
+
+        var tracksToEnrich = Tracks
+            .Where(t => string.IsNullOrEmpty(t.CoverUrl) || t.CoverUrl == Playlist.CoverUrl)
+            .ToList();
+
+        if (tracksToEnrich.Count == 0) return;
+
+        var tasks = tracksToEnrich.Select(async track =>
+        {
+            var realCover = await _spotifyService.GetTrackCoverUrlAsync(track.Uri);
+            if (!string.IsNullOrEmpty(realCover))
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    track.CoverUrl = realCover;
+                });
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     public void UpdatePlaybackState(string? playingUri, bool isPlaying)

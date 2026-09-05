@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -10,6 +11,48 @@ namespace IrreSpotify.Services;
 
 public class SpotifyService
 {
+    private static readonly ConcurrentDictionary<string, string> _trackCoverCache = new(StringComparer.OrdinalIgnoreCase);
+
+    public async Task<string?> GetTrackCoverUrlAsync(string trackUri)
+    {
+        if (string.IsNullOrWhiteSpace(trackUri)) return null;
+
+        string cleanId = trackUri.Trim();
+        if (cleanId.StartsWith("spotify:track:", StringComparison.OrdinalIgnoreCase))
+            cleanId = cleanId["spotify:track:".Length..];
+        if (cleanId.Contains("/track/"))
+            cleanId = cleanId[(cleanId.IndexOf("/track/") + "/track/".Length)..];
+        if (cleanId.Contains('?')) cleanId = cleanId.Split('?')[0];
+
+        if (string.IsNullOrEmpty(cleanId)) return null;
+
+        if (_trackCoverCache.TryGetValue(cleanId, out var cachedUrl))
+        {
+            return cachedUrl;
+        }
+
+        try
+        {
+            using var http = new System.Net.Http.HttpClient();
+            http.Timeout = TimeSpan.FromSeconds(3);
+            string url = $"https://open.spotify.com/oembed?url=https://open.spotify.com/track/{cleanId}";
+            string json = await http.GetStringAsync(url);
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("thumbnail_url", out var thumbProp))
+            {
+                string? imgUrl = thumbProp.GetString();
+                if (!string.IsNullOrEmpty(imgUrl))
+                {
+                    _trackCoverCache[cleanId] = imgUrl;
+                    return imgUrl;
+                }
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
     private readonly AuthService _authService;
 
     public SpotifyService(AuthService authService)
@@ -333,6 +376,7 @@ public class SpotifyService
     {
         try
         {
+            await _authService.EnsureTokenValidAsync();
             return await Client.Player.GetCurrentPlayback();
         }
         catch (Exception ex)
@@ -346,6 +390,7 @@ public class SpotifyService
     {
         try
         {
+            await _authService.EnsureTokenValidAsync();
             var request = new SearchRequest(
                 SearchRequest.Types.Track | SearchRequest.Types.Album | SearchRequest.Types.Playlist | SearchRequest.Types.Artist,
                 query
@@ -366,6 +411,7 @@ public class SpotifyService
     {
         try
         {
+            await _authService.EnsureTokenValidAsync();
             return await Client.Playlists.CurrentUsers(new PlaylistCurrentUsersRequest { Limit = limit });
         }
         catch (Exception ex)
@@ -390,6 +436,87 @@ public class SpotifyService
             if (cleanId.Contains('?')) cleanId = cleanId.Split('?')[0];
             int colonIdx = cleanId.LastIndexOf(':');
             if (colonIdx >= 0) cleanId = cleanId[(colonIdx + 1)..];
+
+            // Primary strategy: Spotify Embed Endpoint (No 403 OAuth restrictions on public/shared playlists!)
+            try
+            {
+                using var embedHttp = new System.Net.Http.HttpClient();
+                embedHttp.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+
+                string embedUrl = $"https://open.spotify.com/embed/playlist/{cleanId}";
+                var embedResp = await embedHttp.GetAsync(embedUrl);
+                if (embedResp.IsSuccessStatusCode)
+                {
+                    string html = await embedResp.Content.ReadAsStringAsync();
+                    int scriptStart = html.IndexOf("<script id=\"__NEXT_DATA__\" type=\"application/json\">");
+                    if (scriptStart >= 0)
+                    {
+                        scriptStart += "<script id=\"__NEXT_DATA__\" type=\"application/json\">".Length;
+                        int scriptEnd = html.IndexOf("</script>", scriptStart);
+                        if (scriptEnd > scriptStart)
+                        {
+                            string jsonStr = html.Substring(scriptStart, scriptEnd - scriptStart);
+                            using var doc = JsonDocument.Parse(jsonStr);
+                            var root = doc.RootElement;
+
+                            if (root.TryGetProperty("props", out var props) &&
+                                props.TryGetProperty("pageProps", out var pageProps) &&
+                                pageProps.TryGetProperty("state", out var state) &&
+                                state.TryGetProperty("data", out var dataObj) &&
+                                dataObj.TryGetProperty("entity", out var entity))
+                            {
+                                string? playlistCover = defaultCoverUrl;
+                                if (entity.TryGetProperty("images", out var imgArr) && imgArr.ValueKind == JsonValueKind.Array)
+                                {
+                                    var firstImg = imgArr.EnumerateArray().FirstOrDefault();
+                                    if (firstImg.ValueKind == JsonValueKind.Object && firstImg.TryGetProperty("url", out var imgUrl))
+                                    {
+                                        playlistCover = imgUrl.GetString();
+                                    }
+                                }
+
+                                if (entity.TryGetProperty("trackList", out var trackList) && trackList.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (var t in trackList.EnumerateArray())
+                                    {
+                                        string uri = t.TryGetProperty("uri", out var u) ? u.GetString() ?? "" : "";
+                                        if (string.IsNullOrEmpty(uri)) continue;
+
+                                        string title = t.TryGetProperty("title", out var n) ? n.GetString() ?? "Untitled Track" : "Untitled Track";
+                                        string artist = t.TryGetProperty("subtitle", out var s) ? s.GetString() ?? "" : "";
+                                        int durMs = t.TryGetProperty("duration", out var d) ? d.GetInt32() : 0;
+
+                                        TimeSpan span = TimeSpan.FromMilliseconds(durMs);
+                                        string durText = span.Hours > 0
+                                            ? $"{span.Hours}:{span.Minutes:D2}:{span.Seconds:D2}"
+                                            : $"{span.Minutes}:{span.Seconds:D2}";
+
+                                        list.Add(new Models.TrackItem
+                                        {
+                                            Uri = uri,
+                                            Title = title,
+                                            Artist = artist,
+                                            Album = string.Empty,
+                                            CoverUrl = !string.IsNullOrEmpty(playlistCover) ? playlistCover : defaultCoverUrl,
+                                            DurationText = durText
+                                        });
+                                    }
+
+                                    if (list.Count > 0)
+                                    {
+                                        Console.WriteLine($"[SpotifyService] Embed playlist fetch succeeded. Loaded {list.Count} tracks.");
+                                        return list;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SpotifyService] Embed fetch error for '{cleanId}': {ex.Message}");
+            }
 
             string token = _authService.CurrentToken?.AccessToken ?? "";
             if (string.IsNullOrEmpty(token)) return list;

@@ -170,6 +170,46 @@ public class AuthService
         AuthStateChanged?.Invoke(false);
     }
 
+    public async Task<bool> EnsureTokenValidAsync()
+    {
+        if (CurrentToken == null && File.Exists(_tokenPath))
+        {
+            await InitializeAsync();
+        }
+
+        if (CurrentToken != null)
+        {
+            var storedTime = CurrentToken.CreatedAt;
+            if (DateTime.UtcNow >= storedTime.AddSeconds(CurrentToken.ExpiresIn - 120))
+            {
+                string refreshToken = CurrentToken.RefreshToken;
+                if (!string.IsNullOrEmpty(refreshToken))
+                {
+                    try
+                    {
+                        Console.WriteLine("[AuthService] Access token near expiration, refreshing...");
+                        var response = await new OAuthClient().RequestToken(
+                            new PKCETokenRefreshRequest(ClientId, refreshToken)
+                        );
+                        if (string.IsNullOrEmpty(response.RefreshToken))
+                        {
+                            response.RefreshToken = refreshToken;
+                        }
+                        await SaveTokenAsync(response);
+                        CreateSpotifyClient(response.AccessToken);
+                        Console.WriteLine("[AuthService] Access token refreshed successfully.");
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[AuthService] Automatic token refresh failed: {ex.Message}");
+                    }
+                }
+            }
+        }
+        return IsAuthenticated;
+    }
+
     private void CreateSpotifyClient(string accessToken)
     {
         var config = SpotifyClientConfig.CreateDefault().WithAuthenticator(new TokenAuthenticator(accessToken, "Bearer"));
